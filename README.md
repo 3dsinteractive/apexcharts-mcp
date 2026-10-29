@@ -150,7 +150,7 @@ The server is **stateless** and answers every request with plain JSON. Every too
 |---|---|---|
 | `--port` or `PORT` | `8000` | Port to listen on |
 | `--host` or `APEXCHARTS_MCP_HOST` | `127.0.0.1` | Address to bind. Use `0.0.0.0` in a container |
-| `APEXCHARTS_MCP_ALLOWED_HOSTS` | `localhost,127.0.0.1,[::1]` | Hostnames `/mcp` answers for (DNS-rebinding defence), or `*`. Set it to your public hostname when exposing the server |
+| `APEXCHARTS_MCP_ALLOWED_HOSTS` | `localhost,127.0.0.1,[::1]` | Hostnames `/mcp` answers for (DNS-rebinding defence). Add `@ip` for direct IP access, or `*` to allow every Host. Set your public hostname when exposing the server |
 | `APEXCHARTS_MCP_ALLOWED_ORIGINS` | none | Browser origins that may call `/mcp` (CORS), or `*`. Requests without an `Origin` header, which is every IDE and desktop client, are always accepted |
 | `APEXCHARTS_MCP_PRODUCTS` | all | Same as in stdio mode |
 
@@ -165,6 +165,7 @@ docker run -d -p 127.0.0.1:3100:8000 --memory=256m \
 ```
 
 Configure the container through environment variables rather than flags; its `HEALTHCHECK` reads `PORT`.
+The Docker image accepts its hosted name, loopback names, and direct IP requests (`@ip`) by default. Add any other domain clients use to `APEXCHARTS_MCP_ALLOWED_HOSTS`, as in the example above. A 403 with `rpc: []` and `APEXCHARTS_MCP_ALLOWED_ORIGINS=*` means the request's `Host` is not on that list; inspect the response body or request `Host` header before updating the list.
 
 To build and publish a multi-platform image to Docker Hub, pass the token on stdin:
 

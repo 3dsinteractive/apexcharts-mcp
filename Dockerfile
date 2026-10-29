@@ -24,8 +24,9 @@ WORKDIR /app
 ENV NODE_ENV=production \
     PORT=8000 \
     APEXCHARTS_MCP_HOST=0.0.0.0 \
-    # localhost and 127.0.0.1 let on-box smoke tests reach /mcp directly.
-    APEXCHARTS_MCP_ALLOWED_HOSTS=mcp.apexcharts.com,localhost,127.0.0.1 \
+    # Accept the hosted name, local smoke tests, and direct IP access.
+    # Add other DNS names explicitly at deployment.
+    APEXCHARTS_MCP_ALLOWED_HOSTS=mcp.apexcharts.com,localhost,127.0.0.1,@ip \
     # Public, read-only, no credentials: any browser page may call it.
     APEXCHARTS_MCP_ALLOWED_ORIGINS=* \
     # Keep the V8 heap inside the container's 256m ceiling, so a leak shows

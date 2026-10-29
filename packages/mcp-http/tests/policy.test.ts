@@ -49,6 +49,10 @@ describe('parseHostAllowList', () => {
     expect(parseHostAllowList('a.example,*', [])).toBe('*');
   });
 
+  it('preserves the IP-literal token', () => {
+    expect(parseHostAllowList('mcp.example.com,@ip', [])).toEqual(['mcp.example.com', '@ip']);
+  });
+
   it('throws on an entry that is not a hostname, so a typo fails at startup', () => {
     expect(() => parseHostAllowList('mcp.apexcharts.com,https://x/y', [])).toThrow(/not a hostname/);
   });
@@ -78,6 +82,14 @@ describe('isHostAllowed', () => {
   it('refuses a missing Host unless the check is off', () => {
     expect(isHostAllowed(undefined, LOOPBACK_HOSTNAMES)).toBe(false);
     expect(isHostAllowed(undefined, '*')).toBe(true);
+  });
+
+  it('accepts IP literals without accepting unrelated DNS names', () => {
+    const allowed = ['mcp.example.com', '@ip'];
+    expect(isHostAllowed('10.0.1.23:8000', allowed)).toBe(true);
+    expect(isHostAllowed('[2001:db8::1]:8000', allowed)).toBe(true);
+    expect(isHostAllowed('evil.example', allowed)).toBe(false);
+    expect(isHostAllowed('evil.example@10.0.1.23', allowed)).toBe(false);
   });
 });
 

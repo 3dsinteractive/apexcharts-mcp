@@ -10,7 +10,9 @@
  * Pure functions, no I/O, so the policy is testable without a socket.
  */
 
-/** `'*'` turns the check off; otherwise the exact values that pass. */
+import { isIP } from 'node:net';
+
+/** `'*'` turns the check off; `@ip` in a list accepts IP-literal Host headers. */
 export type AllowList = '*' | readonly string[];
 
 /** The hostnames a loopback-bound server answers to. */
@@ -45,15 +47,16 @@ function splitList(raw: string | undefined): string[] | undefined {
 
 /**
  * Parse a comma-separated list of hostnames. Ports are ignored, so
- * `mcp.apexcharts.com:443` means `mcp.apexcharts.com`. Unset or blank returns
- * `fallback`; any `*` entry returns `'*'`. Throws on an entry that is not a
- * hostname, so a typo fails at startup instead of refusing every request.
+ * `mcp.apexcharts.com:443` means `mcp.apexcharts.com`. `@ip` accepts any IP
+ * literal without accepting arbitrary DNS names. Unset or blank returns
+ * `fallback`; any `*` entry returns `'*'`. Throws on an invalid entry.
  */
 export function parseHostAllowList(raw: string | undefined, fallback: AllowList): AllowList {
   const entries = splitList(raw);
   if (!entries) return fallback;
   if (entries.includes('*')) return '*';
   return entries.map((entry) => {
+    if (entry === '@ip') return entry;
     const hostname = hostnameOf(entry);
     if (!hostname) throw new Error(`not a hostname: "${entry}"`);
     return hostname;
@@ -90,7 +93,12 @@ function normalizeOrigin(value: string): string | undefined {
 export function isHostAllowed(hostHeader: string | undefined, allowed: AllowList): boolean {
   if (allowed === '*') return true;
   const hostname = hostnameOf(hostHeader);
-  return hostname !== undefined && allowed.includes(hostname);
+  if (hostname === undefined) return false;
+  if (allowed.includes(hostname)) return true;
+  const address = hostname.startsWith('[') && hostname.endsWith(']')
+    ? hostname.slice(1, -1)
+    : hostname;
+  return allowed.includes('@ip') && isIP(address) !== 0;
 }
 
 /**
