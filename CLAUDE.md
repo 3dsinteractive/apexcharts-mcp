@@ -4,7 +4,7 @@ Project context for Claude Code working in this repo.
 
 ## What this is
 
-`apexcharts-mcp` is a Model Context Protocol server that exposes the entire ApexCharts ecosystem (apexcharts, apexgantt, apextree, apexsankey, apex-grid, apexstock, apexmaps) as namespaced tools for AI assistants. It speaks MCP over **stdio** by default (what IDE clients launch) and over **Streamable HTTP** with `--http` (what the hosted endpoint `mcp.apexcharts.com` runs; see "HTTP transport" below). It's distributed as a Node CLI (`bin: apexcharts-mcp`).
+`apexcharts-mcp` is a Model Context Protocol server that exposes the entire ApexCharts ecosystem (apexcharts, apexgantt, apextree, apexsankey, apex-grid, apexstock, apexmaps) as namespaced tools for AI assistants. It speaks MCP over **Streamable HTTP** by default on port 8000, and over **stdio** with `--stdio` for local IDE clients. It's distributed as a Node CLI (`bin: apexcharts-mcp`).
 
 ## Stack
 
@@ -19,7 +19,7 @@ Project context for Claude Code working in this repo.
 
 ```
 src/
-  index.ts                          # bootstrap: reads APEXCHARTS_MCP_PRODUCTS, builds the server factory, runs stdio (default) or --http
+  index.ts                          # bootstrap: reads APEXCHARTS_MCP_PRODUCTS, builds the server factory, runs HTTP (default) or --stdio
 Dockerfile                          # production image for HTTP mode (the hosted endpoint)
 scripts/
   bundle.mjs                        # esbuild bundle step — externalizes SDK / zod / *-skill packages
@@ -138,7 +138,7 @@ The MCP server communicates via JSON-RPC on stdout. **Never `console.log` from s
 
 ### HTTP transport
 
-`--http` serves `/mcp` (Streamable HTTP) and `/healthz` from `packages/mcp-http`. Infra docs for the hosted endpoint live in the website repo (`docs/mcp-hosting.md`, `docs/mcp-hosting-devops.md`).
+The default HTTP mode serves `/mcp` (Streamable HTTP) and `/healthz` from `packages/mcp-http`. Infra docs for the hosted endpoint live in the website repo (`docs/mcp-hosting.md`, `docs/mcp-hosting-devops.md`).
 
 **It is stateless with JSON responses, and the infrastructure depends on that.** Every tool is a quick read-only call with no server push, so each POST gets a freshly built server (well under 1 ms for all seven products) and `GET`/`DELETE` answer 405. That is why no connection outlives one call (a load balancer's 60s idle timeout never bites), and why replicas need no sticky sessions and memory cannot grow with abandoned clients. Adding a tool that needs sessions, progress notifications, sampling or elicitation means revisiting the load balancer, nginx and replica setup, not just this package.
 

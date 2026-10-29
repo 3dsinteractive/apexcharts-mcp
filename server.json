@@ -24,6 +24,9 @@
       "registryType": "npm",
       "identifier": "apexcharts-mcp",
       "version": "0.10.3",
+      "packageArguments": [
+        { "type": "positional", "value": "--stdio" }
+      ],
       "transport": {
         "type": "stdio"
       }

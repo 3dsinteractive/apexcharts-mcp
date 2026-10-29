@@ -35,14 +35,15 @@ const SERVER_VERSION = (
   }
 ).version;
 
-const DEFAULT_PORT = 3000;
+const DEFAULT_PORT = 8000;
 const DEFAULT_HOST = '127.0.0.1';
 const LOOPBACK_BIND_ADDRESSES = ['127.0.0.1', 'localhost', '::1'];
 
 const USAGE = `Usage:
-  apexcharts-mcp                       MCP over stdio (default; what IDE clients launch)
-  apexcharts-mcp --http [--port <n>] [--host <addr>]
-                                       MCP over Streamable HTTP at /mcp, health at /healthz
+  apexcharts-mcp [--port <n>] [--host <addr>]
+                                       MCP over Streamable HTTP at /mcp (default)
+  apexcharts-mcp --stdio               MCP over stdio for local IDE clients
+  apexcharts-mcp --http                Explicit HTTP mode (compatibility alias)
 
 Environment:
   APEXCHARTS_MCP_PRODUCTS         comma-separated product ids to load (default: all)
@@ -78,15 +79,14 @@ function parseProducts(env: string | undefined): ProductKey[] {
   return result;
 }
 
-const KNOWN_FLAGS = ['http', 'port', 'host'];
+const KNOWN_FLAGS = ['http', 'stdio', 'port', 'host'];
 
-function parseCli(argv: string[]): { http: boolean; port?: string; host?: string } {
-  // Non-strict so an unexpected argument cannot stop an existing stdio
-  // install from starting; HTTP mode refuses them below instead.
+function parseCli(argv: string[]): { stdio: boolean; port?: string; host?: string } {
   const { values, positionals } = parseArgs({
     args: argv,
     options: {
       http: { type: 'boolean', default: false },
+      stdio: { type: 'boolean', default: false },
       port: { type: 'string' },
       host: { type: 'string' },
     },
@@ -97,17 +97,18 @@ function parseCli(argv: string[]): { http: boolean; port?: string; host?: string
     ...Object.keys(values).filter((k) => !KNOWN_FLAGS.includes(k)).map((k) => `--${k}`),
     ...positionals,
   ];
-  const http = values.http === true;
+  const stdio = values.stdio === true;
+  if (stdio && values.http === true) throw new UsageError('--stdio and --http cannot be combined.');
   for (const key of ['port', 'host'] as const) {
     if (values[key] !== undefined && typeof values[key] !== 'string') {
       throw new UsageError(`--${key} needs a value.`);
     }
   }
-  if (unknown.length > 0) {
-    if (http) throw new UsageError(`unknown argument ${unknown.join(' ')}.`);
-    process.stderr.write(`apexcharts-mcp: ignoring unknown argument ${unknown.join(' ')}.\n`);
+  if (unknown.length > 0) throw new UsageError(`unknown argument ${unknown.join(' ')}.`);
+  if (stdio && (values.port !== undefined || values.host !== undefined)) {
+    throw new UsageError('--port and --host require HTTP mode.');
   }
-  return { http, port: values.port as string | undefined, host: values.host as string | undefined };
+  return { stdio, port: values.port as string | undefined, host: values.host as string | undefined };
 }
 
 function parsePort(raw: string | undefined): number {
@@ -205,8 +206,8 @@ async function runStdio(enabled: ProductKey[]): Promise<void> {
 async function main(): Promise<void> {
   const cli = parseCli(process.argv.slice(2));
   const enabled = parseProducts(process.env.APEXCHARTS_MCP_PRODUCTS);
-  if (cli.http) await runHttp(enabled, cli);
-  else await runStdio(enabled);
+  if (cli.stdio) await runStdio(enabled);
+  else await runHttp(enabled, cli);
 }
 
 main().catch((err) => {

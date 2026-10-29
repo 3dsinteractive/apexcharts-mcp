@@ -89,7 +89,7 @@ export interface StartHttpServerOptions extends HttpTransportOptions {
 }
 
 export interface RunningHttpServer {
-  /** Base URL actually bound, e.g. `http://127.0.0.1:3000`. */
+  /** Base URL actually bound, e.g. `http://127.0.0.1:8000`. */
   url: string;
   server: Server;
   /** Stop accepting connections, let in-flight requests finish, then resolve. */
