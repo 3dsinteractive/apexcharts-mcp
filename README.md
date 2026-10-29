@@ -165,7 +165,7 @@ docker run -d -p 127.0.0.1:3100:8000 --memory=256m \
 ```
 
 Configure the container through environment variables rather than flags; its `HEALTHCHECK` reads `PORT`.
-The Docker image accepts its hosted name, loopback names, and direct IP requests (`@ip`) by default. Add any other domain clients use to `APEXCHARTS_MCP_ALLOWED_HOSTS`, as in the example above. A 403 with `rpc: []` and `APEXCHARTS_MCP_ALLOWED_ORIGINS=*` means the request's `Host` is not on that list; inspect the response body or request `Host` header before updating the list.
+The Docker image sets `APEXCHARTS_MCP_ALLOWED_HOSTS=*`, so it accepts requests through any domain, IP, or container name. This disables Host-based DNS-rebinding protection; set an explicit hostname list at deployment if that protection is needed, as in the example above.
 
 To build and publish a multi-platform image to Docker Hub, pass the token on stdin:
 
